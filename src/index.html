@@ -395,11 +395,24 @@ let storageMode = "local";
 let state = null;
 let saveWarned = false;
 
+/* 桌面版多一层落盘：data/kanban.json，人眼可读、可备份、外部程序（AI）可读写 */
+const hasFileStore = () => !!(window.desktop && window.desktop.store);
+let lastWritten = "";
+let suppressEchoUntil = 0;
+
 function save() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
   } catch (e) {
     if (!saveWarned) { saveWarned = true; toast("本地存储写入失败，请及时导出备份"); }
+  }
+  if (hasFileStore()) {
+    const text = JSON.stringify(state, null, 2);
+    if (text !== lastWritten) {
+      lastWritten = text;
+      suppressEchoUntil = Date.now() + 1500;
+      window.desktop.store.write(text).catch(() => {});
+    }
   }
   if (storageMode === "server") {
     fetch("/api/state", {
@@ -410,23 +423,66 @@ function save() {
   }
 }
 
+const looksLikeState = (j) => !!(j && Array.isArray(j.lists) && j.lists.length);
+
 async function loadState() {
+  /* 桌面版以文件为准：文件在就一直用它，文件不在再退回别的来源 */
+  if (hasFileStore()) {
+    try {
+      const text = await window.desktop.store.read();
+      if (text) {
+        const j = JSON.parse(text);
+        if (looksLikeState(j)) { storageMode = "file"; lastWritten = text; return j; }
+      }
+    } catch (e) { /* 文件坏了就退回 localStorage */ }
+  }
   try {
     const r = await fetch("/api/state", { cache: "no-store" });
     if (r.ok) {
       const j = await r.json();
-      if (j && Array.isArray(j.lists) && j.lists.length) { storageMode = "server"; return j; }
+      if (looksLikeState(j)) { storageMode = "server"; return j; }
     }
   } catch (e) { /* file:// 下必然失败，走本地 */ }
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const j = JSON.parse(raw);
-      if (j && Array.isArray(j.lists) && j.lists.length) return j;
+      if (looksLikeState(j)) return j;
     }
   } catch (e) {}
   return null;
 }
+
+/* 外部（比如 AI 直接编辑 kanban.json）改了文件，热加载进来 */
+let pendingReload = null;
+function applyExternal(text) {
+  let j = null;
+  try { j = JSON.parse(text); } catch (e) { return; }
+  if (!looksLikeState(j)) return;
+  if (state && JSON.stringify(j) === JSON.stringify(state)) return;
+  state = normalizeState(j);
+  lastWritten = JSON.stringify(state, null, 2);
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+  render();
+  toast("清单已从文件同步");
+}
+
+function watchFile() {
+  if (!hasFileStore() || !window.desktop.store.onChange) return;
+  window.desktop.store.onChange((text) => {
+    if (Date.now() < suppressEchoUntil) return;         /* 自己刚写的 */
+    if (document.activeElement && document.activeElement.isContentEditable) {
+      pendingReload = text; return;                     /* 正在改字，别打断 */
+    }
+    applyExternal(text);
+  });
+  document.addEventListener("focusout", () => {
+    if (!pendingReload) return;
+    const t = pendingReload; pendingReload = null;
+    applyExternal(t);
+  });
+}
+
 
 /* ============ 工具 ============ */
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
@@ -1657,6 +1713,7 @@ function mountDesktopChrome() {
   save();
   render();
   mountDesktopChrome();
+  watchFile();
 
   /* 页面常开时跨天，日期与「今天/明天」要自己翻页 */
   let dayKey = new Date().toDateString();

@@ -27,7 +27,8 @@ Windows 桌面小工具，一个独立窗口，默认置顶，可以随手拖到
 - **窗口随你摆**：拖动顶栏移动，拖四边缩放（最小 460×300），位置和大小下次打开还在原处。
 - **顶栏只有今天的日期**：`11月24日 周二`，有超期未完成的会在前面标一笔红色。
 - **不吃后台**：纯 HTML + 原生 JS，不用框架，内存占用就是 Electron 的基础开销。
-- **数据在你手里**：存本机 `data` 目录，可一键导出 / 导入 JSON，不联网、无账号。
+- **数据在你手里**：除了浏览器缓存，同时写一份 `data/kanban.json`——记事本能直接打开，崩了能手工救，也可以交给 AI 打理（见下文「配合 WorkBuddy 用」）。不联网、无账号。
+- **能被 AI 管**：配套的 Skill 让 AI 直接读写清单，改完窗口实时跟着变；同一份数据也方便脚本批量灌选题。
 
 ## 下载与使用
 
@@ -53,14 +54,48 @@ Windows 桌面小工具，一个独立窗口，默认置顶，可以随手拖到
 
 顶栏空白处按住就能拖动整个窗口；位置和大小会记住，下次打开还在原处。
 
+## 配合 WorkBuddy 用（可选）
+
+仓库里的 `skill/` 是一个 WorkBuddy Skill。装上之后可以直接跟 AI 说「把这几个选题加进清单」「今天还剩什么事」「上周的都清掉」，它会自己去改数据，窗口会实时跟着变。
+
+**怎么装**
+
+把 `skill/` 整个文件夹复制到 WorkBuddy 的技能目录：
+
+```
+%USERPROFILE%\.workbuddy\skills\qiqi-list\
+```
+
+也就是让 `SKILL.md` 正好在这个位置：`...\.workbuddy\skills\qiqi-list\SKILL.md`。重启 WorkBuddy 后生效。
+
+**能干什么**
+
+```bash
+node skill/scripts/install.js           # 从 GitHub 下载并装好，建桌面快捷方式
+node skill/scripts/kanban.js path       # 数据文件在哪
+node skill/scripts/kanban.js list       # 按急/本周/普通列出来
+node skill/scripts/kanban.js today      # 今天到期、逾期的
+node skill/scripts/kanban.js add "买电池" --prio high --due 2026-11-28
+node skill/scripts/kanban.js done "买电池"
+```
+
+这些命令是给人看的，装好 Skill 之后你不用自己敲，直接说人话就行。
+
+**它为什么能改得动**
+
+这一版给应用加了一层文件存档：清单除了存在浏览器 `localStorage`，还会同时写一份 `data/kanban.json`（缩进格式，记事本能打开）。外部改了这份文件，窗口会在 0.3 秒内自动同步，不用重启。
+
+附带的好处：**数据有了第二份副本**。哪天 Edge 清了缓存、机器重装了，`data` 目录里的 `kanban.json` 还在，把它拷回去就能恢复。
+
 ## 数据
 
 | 内容 | 位置 |
 | --- | --- |
-| 清单数据 | 浏览器 `localStorage`，落在 exe 同级 `data` 目录 |
+| 清单条目 | `data/kanban.json`（JSON，人眼可读，可手工编辑） |
+| 浏览器缓存副本 | `localStorage`，与上者同步 |
 | 窗口位置与大小、是否置顶 | `data/window.json` |
 
-数据只在本机，**没有云同步**。换电脑请用「⋯ → 导出备份」，会存一个 JSON 到桌面，到新机器上「导入备份」。
+数据只在本机，**没有云同步**。换电脑请把整个安装目录拷走，或用「⋯ → 导出备份」存一个 JSON，到新机器上「导入备份」。
 
 ## 开发
 
@@ -82,9 +117,11 @@ npm install
 ## 目录结构
 
 ```
-main.js                 主进程：窗口、置顶、位置记忆、单实例
-preload.js              预加载脚本：只暴露最小的一组窗口控制接口
+main.js                 主进程：窗口、置顶、位置记忆、单实例、数据落盘
+preload.js              预加载脚本：只暴露最小的一组窗口控制与数据读写接口
 src/index.html          全部界面与逻辑（HTML + CSS + 原生 JS，单文件）
+skill/SKILL.md          WorkBuddy Skill：安装与日常打理清单的指令
+skill/scripts/          install.js（下载部署）、kanban.js（增删改查）
 build/make-icon.js      图标生成脚本
 build/icon.ico          应用图标
 docs/screenshot.png     截图

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu } = require("electron");
+const { app, BrowserWindow, ipcMain, Menu, session } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -29,6 +29,28 @@ const DATA_DIR = pickDataDir();
 app.setPath("userData", DATA_DIR);
 
 const CFG = path.join(DATA_DIR, "window.json");
+const DATA_FILE = path.join(DATA_DIR, "kanban.json");
+
+/* ---------- 清单数据落盘：kanban.json ----------
+   除了 localStorage，再存一份人眼可读、可备份、外部程序（比如 AI）可读写的 JSON。
+   写入用「临时文件 + 改名」，避免读到写了一半的内容。 */
+let lastWriteAt = 0;
+
+function readJsonFile() {
+  try { return fs.readFileSync(DATA_FILE, "utf8"); } catch (e) { return null; }
+}
+
+function writeJsonFile(text) {
+  try {
+    const tmp = DATA_FILE + ".tmp";
+    fs.writeFileSync(tmp, text, "utf8");
+    fs.renameSync(tmp, DATA_FILE);
+    lastWriteAt = Date.now();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
 function readCfg() {
   try { return JSON.parse(fs.readFileSync(CFG, "utf8")); } catch (e) { return {}; }
@@ -87,6 +109,33 @@ function createWindow() {
     });
   }
 
+  /* 自检模式：KANBAN_SYNC_TEST=1 时模拟外部改写 kanban.json，看页面能否热加载 */
+  if (process.env.KANBAN_SYNC_TEST) {
+    win.webContents.once("did-finish-load", () => {
+      setTimeout(() => {
+        try {
+          const j = JSON.parse(readJsonFile());
+          const probeId = "extprobe" + Date.now();
+          j.items.push({
+            id: probeId, listId: j.lists[0].id, colId: j.lists[0].columns[0].id,
+            text: "外部写入测试", note: "", due: null, prio: "high", order: 999, completedAt: null
+          });
+          fs.writeFileSync(DATA_FILE, JSON.stringify(j, null, 2), "utf8");
+          setTimeout(async () => {
+            const r = await win.webContents.executeJavaScript(
+              "JSON.stringify({n:state.items.length,hit:state.items.some(i=>i.id===" + JSON.stringify(probeId) + ")})"
+            );
+            console.log("SYNC " + r);
+            app.quit();
+          }, 1700);
+        } catch (e) {
+          console.log("SYNC_ERROR " + e.message);
+          app.quit();
+        }
+      }, 1300);
+    });
+  }
+
   const saveBounds = () => {
     if (!win || win.isDestroyed() || win.isMinimized()) return;
     const b = win.getBounds();
@@ -125,8 +174,29 @@ ipcMain.handle("win:getPin", () => pinned);
 ipcMain.handle("app:info", () => ({
   name: APP_NAME,
   version: app.getVersion(),
-  dataDir: DATA_DIR
+  dataDir: DATA_DIR,
+  dataFile: DATA_FILE
 }));
+
+/* 页面与外部程序共用同一个 kanban.json */
+ipcMain.handle("store:read", () => readJsonFile());
+ipcMain.handle("store:write", (e, text) => writeJsonFile(text));
+
+/* 文件被外部改动时通知页面热加载 */
+let watchTimer = null;
+function watchDataFile() {
+  try {
+    fs.watch(DATA_DIR, (evt, name) => {
+      if (!name || name !== "kanban.json") return;
+      if (Date.now() - lastWriteAt < 1200) return; /* 自己刚写入的，忽略 */
+      clearTimeout(watchTimer);
+      watchTimer = setTimeout(() => {
+        const text = readJsonFile();
+        if (text && win && !win.isDestroyed()) win.webContents.send("store:changed", text);
+      }, 220);
+    });
+  } catch (e) {}
+}
 
 app.whenReady().then(() => {
   /* 导出备份默认落到桌面，省得找不到 */
@@ -140,6 +210,7 @@ app.whenReady().then(() => {
   } catch (e) {}
 
   createWindow();
+  watchDataFile();
   app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
