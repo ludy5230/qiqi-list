@@ -1,4 +1,4 @@
-# QiqiList (柒柒清单) - one-line installer for Windows
+# QiqiList - one-line installer for Windows
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/ludy5230/qiqi-list/main/install.ps1 | iex"
 #
@@ -16,7 +16,7 @@ $ErrorActionPreference = 'Stop'
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
 
 $repo    = 'ludy5230/qiqi-list'
-$appName = [string]([char]0x67D2 + [char]0x67D2 + [char]0x6E05 + [char]0x5355)   # 柒柒清单
+$appName = [string]([char]0x67D2 + [char]0x67D2 + [char]0x6E05 + [char]0x5355)   # the app name, built from code points
 $exeName = $appName + '.exe'
 $lnkName = $appName + '.lnk'
 $homeDir = $env:USERPROFILE
