@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>柒柒清单</title>
+<style>
+:root{
+  --paper:#FFFCF3;
+  --paper-2:#FFFDF6;
+  --rail:#F4EAD3;
+  --bg1:#EFE6D2;
+  --ink:#3B362C;
+  --ink-2:#6F6757;
+  --ink-3:#9C9483;
+  --ink-4:#C0B49A;
+  --line:#E7DDC6;
+  --accent:#A8792F;
+  --accent-soft:rgba(168,121,47,.10);
+  --red:#C0503E;
+  --amber:#D9A72A;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;
+  font:14px/1.5 "Microsoft YaHei UI","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  color:var(--ink);
+  background:radial-gradient(circle at 28% 18%,#F2EADA 0%,#E6DBC4 55%,#DCCFB4 100%);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+
+/* ---------- 纸张 ---------- */
+.app{
+  width:min(94vw,760px);height:min(96vh,700px);min-height:480px;
+  background:var(--paper);
+  border:1px solid #E9DDC2;border-radius:14px;
+  box-shadow:0 22px 48px rgba(84,66,36,.20),0 3px 8px rgba(84,66,36,.10),inset 0 1px 0 rgba(255,255,255,.85);
+  display:flex;overflow:hidden;position:relative;
+}
+.app::after{
+  content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;
+  background:linear-gradient(160deg,rgba(255,255,255,.5),transparent 32%);
+}
+
+/* ---------- 主区 ---------- */
+.board{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.topbar{
+  display:flex;align-items:center;gap:3px;padding:10px 9px 8px;
+  border-bottom:1px solid var(--line);flex:0 0 auto;
+  -webkit-app-region:drag;   /* 桌面版：按住顶栏拖动窗口 */
+}
+.icon{
+  border:none;background:transparent;color:var(--ink-3);font:inherit;font-size:14px;
+  width:26px;height:26px;border-radius:6px;cursor:pointer;line-height:1;
+  display:grid;place-items:center;flex:0 0 auto;transition:.12s;
+}
+.icon:hover{background:var(--accent-soft);color:var(--ink)}
+/* ---------- 桌面版窗口按钮（浏览器里不显示） ---------- */
+.winbtns{display:none}
+.topbar .icon,.winbtns,.winbtn{-webkit-app-region:no-drag}
+body.is-desktop .winbtns{display:flex;align-items:center;gap:1px;margin-left:3px}
+.winbtn{
+  -webkit-app-region:no-drag;
+  width:22px;height:22px;border:none;background:transparent;color:#AFA48B;
+  font:inherit;font-size:11px;line-height:1;border-radius:5px;cursor:pointer;
+  display:grid;place-items:center;padding:0;flex:0 0 auto;
+  transition:background-color .12s,color .12s,opacity .12s;
+}
+.winbtn:hover{background:rgba(168,121,47,.13);color:var(--ink)}
+.winbtn.off{opacity:.32}
+.winbtn.win-close:hover{background:#E3B7A6;color:#7E2E1C}
+/* 桌面版铺满窗口，缩放才有意义 */
+body.is-desktop{padding:0}
+body.is-desktop .app{
+  width:100%;height:100%;max-width:none;min-height:0;
+  border:none;border-radius:0;box-shadow:none;
+}
+.title{
+  flex:1;display:flex;align-items:baseline;gap:7px;min-width:0;
+  padding:2px 2px;overflow:hidden;justify-content:flex-end;
+}
+.sum-main{font-size:12.5px;font-weight:600;color:var(--ink-2);letter-spacing:.01em;white-space:nowrap}
+.sum-sub{font-size:10px;color:var(--ink-3);white-space:nowrap}
+.sum-sub b{font-weight:600;color:#A9997C}
+/* 顶栏：今天几号 · 周几 */
+.today{
+  flex:0 0 auto;display:flex;align-items:baseline;gap:6px;
+  white-space:nowrap;padding:0 10px 0 1px;
+  font-variant-numeric:tabular-nums;
+}
+.today .d{font-size:13.5px;font-weight:700;color:var(--ink);letter-spacing:.01em}
+.today .w{font-size:11px;font-weight:600;color:var(--accent)}
+.today .over-n{font-size:10px;font-weight:600;color:var(--red)}
+.today .sep{font-size:10px;color:#D5C9B0}
+
+/* ---------- 两栏 ---------- */
+.cols{flex:1;display:flex;min-height:0;overflow:hidden}
+.col{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+.col-open{flex:1 1 auto}
+.col-done{flex:0 0 262px;background:#FDFAF1;border-left:1px solid var(--line)}
+.col-head{
+  display:flex;align-items:center;gap:6px;padding:9px 12px 7px;
+  flex:0 0 auto;user-select:none;
+}
+.col-title{font-size:10.5px;font-weight:700;letter-spacing:.15em;color:var(--ink-3)}
+.col-done .col-title{color:#B5A98F}
+.col-badge{
+  font-size:9.5px;color:#A99D84;background:#F3E9D3;border-radius:9px;
+  padding:1px 6px;line-height:1.5;font-variant-numeric:tabular-nums;
+}
+.col-body{
+  flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;
+  padding:0 9px 10px;overscroll-behavior:contain;
+}
+.col-body::-webkit-scrollbar{width:6px;height:0}
+.col-body::-webkit-scrollbar-thumb{background:#E4D7BA;border-radius:3px}
+.col-body::-webkit-scrollbar-track{background:transparent}
+.col-body::-webkit-scrollbar-corner{background:transparent}
+
+/* 分组 */
+.grp{margin-bottom:2px}
+.grp-tag{display:flex;align-items:center;gap:5px;padding:7px 3px 4px;user-select:none}
+.grp-t{font-size:9px;font-weight:700;letter-spacing:.12em}
+.grp-n{font-size:9px;color:#B6AA90;font-variant-numeric:tabular-nums}
+.grp-line{flex:1;height:1px;background:#EDE3CB}
+.grp-high .grp-t{color:#C0503E}
+.grp-mid .grp-t{color:#BE9420}
+.grp-none .grp-t{color:#B5A98F}
+.grp-empty{
+  height:26px;border:1px dashed #E7DCC2;border-radius:8px;margin:0 2px 4px;
+  display:grid;place-items:center;font-size:10px;color:#D0C4A9;
+  user-select:none;pointer-events:none;
+}
+.items{display:flex;flex-direction:column;border-radius:8px;transition:background-color .12s}
+.items.empty-drop{background:var(--accent-soft);outline:1px dashed #D2BC8C;outline-offset:-2px}
+
+/* ---------- 卡片 ---------- */
+.card{
+  position:relative;display:flex;align-items:center;
+  height:32px;background:var(--paper-2);border:1px solid #ECE1C9;border-radius:9px;
+  padding:0 7px 0 14px;margin-bottom:4px;
+  contain:layout paint style;
+  transition:background-color .13s ease,border-color .13s ease;
+}
+.card:hover{background:#FFFCF1}
+.card.dragging{opacity:.22;border-style:dashed;background:transparent!important}
+.card.dragging .prio::after{opacity:.25}
+.card.drop-above{box-shadow:0 -2px 0 0 var(--accent)}
+.card.drop-below{box-shadow:0 2px 0 0 var(--accent)}
+
+.prio{
+  position:absolute;left:0;top:0;bottom:0;width:12px;
+  border-radius:9px 0 0 9px;cursor:pointer;
+}
+.prio::after{
+  content:"";position:absolute;left:0;top:4px;bottom:4px;width:3px;
+  border-radius:9px 0 0 9px;background:transparent;transition:background-color .13s;
+}
+.card:hover .prio:not(.high):not(.mid)::after{background:#DACDB1}
+.prio.high::after{background:var(--red)}
+.prio.mid::after{background:var(--amber)}
+
+/* 重点标记：整卡染色 */
+.card.p-high{background:#FBE9E1;border-color:#E5BCA8}
+.card.p-high:hover{background:#F9E3D9}
+.card.p-mid{background:#FDF3D4;border-color:#E3C88A}
+.card.p-mid:hover{background:#FCEFC9}
+.card.p-high .t-main{color:#7E3A26}
+.card.p-mid .t-main{color:#6B5518}
+
+/* 已完成列：一律素净 */
+.col-done .card,
+.col-done .card:hover{background:var(--paper-2);border-color:#ECE1C9}
+.col-done .prio{pointer-events:none;cursor:default}
+.col-done .prio::after{display:none}
+
+.card-row{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+
+.check{
+  width:14px;height:14px;border:1.5px solid #D2C3A3;border-radius:4px;
+  flex:0 0 auto;cursor:pointer;display:grid;place-items:center;
+  transition:background-color .13s,border-color .13s;background:#fff;
+}
+.check:hover{border-color:var(--accent);background:#FBF2DF}
+.check.on{background:var(--accent);border-color:var(--accent)}
+.check.on::after{
+  content:"";width:6px;height:3px;
+  border-left:1.5px solid #fff;border-bottom:1.5px solid #fff;
+  transform:rotate(-45deg) translate(0,-1px);
+}
+
+/* 单行文字：事项 + 备注 */
+.text{
+  flex:1;display:flex;align-items:baseline;gap:7px;
+  min-width:0;overflow:hidden;white-space:nowrap;
+  font-size:12.5px;line-height:1.35;outline:none;cursor:default;
+}
+.t-main{
+  flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.t-note{
+  flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:10.8px;color:#A99D83;
+}
+.t-note.is-empty{display:none}
+.t-main.struck{color:#9E947C;text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:#B3A88F}
+.card.editing{height:auto;min-height:32px;align-items:flex-start;padding-top:6px;padding-bottom:6px}
+.card.editing .text{white-space:normal;display:block;line-height:1.5}
+.card.editing .t-main,.card.editing .t-note{display:inline;white-space:pre-wrap;overflow:visible;text-overflow:clip}
+.card.editing .t-note.is-empty{display:inline;color:#D3C7AC}
+.card.editing .t-main:focus,.card.editing .t-note:focus{background:#fff;box-shadow:0 0 0 2px var(--accent-soft);border-radius:4px}
+
+.due{
+  font-size:10px;color:var(--ink-3);border:1px solid #E7DCC4;border-radius:5px;
+  padding:0 4px;flex:0 0 auto;cursor:pointer;line-height:1.6;white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+  transition:color .13s,border-color .13s;
+}
+.due:hover{border-color:var(--accent);color:var(--accent)}
+.due.over{color:var(--red);border-color:#E8BEB0;background:#FDF3EE}
+.more{
+  width:16px;height:16px;border:none;background:transparent;color:#C9BC9E;
+  font:inherit;font-size:12px;cursor:pointer;opacity:0;flex:0 0 auto;
+  line-height:1;padding:0;border-radius:3px;
+}
+.card:hover .more{opacity:1}
+.more:hover{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- 输入行 ---------- */
+.addRow{
+  display:flex;align-items:center;flex:0 0 auto;
+  padding:5px 9px 8px;border-top:1px solid #F1E7CF;
+}
+.addInput{
+  flex:1;border:none;background:transparent;font:inherit;font-size:12px;
+  color:var(--ink);padding:4px 6px;border-radius:6px;outline:none;min-width:0;
+}
+.addInput::placeholder{color:var(--ink-4)}
+.addInput:focus{background:var(--paper-2);box-shadow:inset 0 0 0 1px #E7DCC4}
+
+/* ---------- 拖拽 ---------- */
+.card{user-select:none;-webkit-user-select:none;cursor:grab}
+.card .text{cursor:grab}
+.card.dragging{cursor:grabbing}
+/* 整列高亮：落在哪一列，一目了然 */
+.col.drop-over{background:#FBF3E0}
+.col.drop-over .col-title{color:var(--accent)}
+.col.drop-over .col-badge{background:#EBD9AF;color:#8A6C24}
+.col.drop-over .col-body{outline:1.5px dashed #D8BE89;outline-offset:-5px;border-radius:12px}
+.col.drop-over .grp-empty{border-color:var(--accent);color:var(--accent);background:#fffdf6}
+/* 目标分组高亮 */
+.grp.drop-target .grp-t{color:var(--accent)}
+.grp.drop-target .items{background:rgba(168,121,47,.07);outline:1px dashed #DCC79C;outline-offset:-2px}
+.text[contenteditable="true"],.note[contenteditable="true"]{user-select:text;-webkit-user-select:text}
+.card.ghost{
+  position:fixed;left:0;top:0;margin:0;z-index:900;pointer-events:none;contain:none;
+  background:var(--paper-2);border-color:#DDD0B2;
+  box-shadow:0 16px 34px rgba(84,66,36,.26),0 2px 6px rgba(84,66,36,.14);
+  will-change:transform;
+}
+body.is-dragging{cursor:grabbing;user-select:none;-webkit-user-select:none}
+body.is-dragging .card{cursor:grabbing}
+/* ---------- 菜单 ---------- */
+.menu{
+  position:fixed;min-width:136px;background:var(--paper-2);
+  border:1px solid #E5DAC1;border-radius:10px;
+  box-shadow:0 12px 28px rgba(88,70,40,.20),0 2px 5px rgba(88,70,40,.10);
+  padding:4px;display:none;z-index:300;font-size:12.5px;
+}
+.menu.open{display:block}
+.menu-item{
+  padding:6px 9px;border-radius:6px;cursor:pointer;color:var(--ink-2);
+  white-space:nowrap;display:flex;align-items:center;gap:7px;
+}
+.menu-item:hover{background:#F5EDDA;color:var(--ink)}
+.menu-item .k{margin-left:auto;font-size:10px;color:var(--ink-4)}
+.menu-item.danger{color:#B4472F}
+.menu-item.danger:hover{background:#FBEFEA}
+.menu-sep{height:1px;background:#EFE5CE;margin:4px 2px}
+.menu-label{padding:5px 9px 2px;font-size:9.5px;letter-spacing:.12em;color:var(--ink-4);font-weight:700}
+
+/* ---------- 弹窗 ---------- */
+.mask{position:fixed;inset:0;background:rgba(58,48,30,.26);display:none;z-index:400}
+.mask.open{display:block}
+.dialog{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.97);
+  width:276px;background:var(--paper-2);border-radius:13px;padding:17px 17px 14px;
+  box-shadow:0 24px 56px rgba(58,46,26,.32);display:none;z-index:401;opacity:0;
+  transition:opacity .15s,transform .15s;
+}
+.dialog.open{display:block;opacity:1;transform:translate(-50%,-50%) scale(1)}
+.dlg-title{font-size:13.5px;font-weight:600;margin-bottom:10px}
+.dlg-msg{font-size:12px;color:var(--ink-2);line-height:1.6;margin-bottom:14px;white-space:pre-line;word-break:break-all}
+.dlg-input{
+  width:100%;border:1px solid var(--line);background:#fff;border-radius:8px;
+  font:inherit;font-size:13px;padding:8px 10px;outline:none;color:var(--ink);
+}
+.dlg-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.dlg-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:14px}
+.btn{
+  border:none;background:var(--accent);color:#fff;font:inherit;font-size:12.5px;
+  padding:6px 15px;border-radius:7px;cursor:pointer;transition:.13s;
+}
+.btn:hover{background:#96701f}
+.btn.ghost{background:transparent;color:var(--ink-2)}
+.btn.ghost:hover{background:#F3EAD6;color:var(--ink)}
+.btn.danger{background:var(--red)}
+.btn.danger:hover{background:#A8402F}
+
+/* ---------- 提示 ---------- */
+.toast{
+  position:fixed;left:50%;bottom:34px;transform:translate(-50%,10px);
+  background:rgba(59,54,44,.92);color:#FBF6E9;font-size:12px;
+  padding:7px 15px;border-radius:20px;opacity:0;pointer-events:none;
+  transition:.22s;z-index:500;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <main class="board">
+    <div class="topbar">
+      <div class="today" id="todayLine"></div>
+      <div class="title" id="summary"></div>
+      <button class="icon" id="quickAdd" title="添加事项">＋</button>
+      <button class="icon" id="menuBtn" title="更多">⋯</button>
+    </div>
+    <div class="cols">
+      <section class="col col-open">
+        <div class="col-head">
+          <span class="col-title">待 办</span>
+          <span class="col-badge" id="cntOpen">0</span>
+        </div>
+        <div class="col-body" id="bodyOpen" data-kind="open"></div>
+        <div class="addRow" id="addRowBox"></div>
+      </section>
+      <section class="col col-done">
+        <div class="col-head">
+          <span class="col-title">已完成</span>
+          <span class="col-badge" id="cntDone">0</span>
+        </div>
+        <div class="col-body" id="bodyDone" data-kind="done"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="menu" id="menu"></div>
+<div class="mask" id="mask"></div>
+<div class="dialog" id="dialog">
+  <div class="dlg-title" id="dlgTitle"></div>
+  <div class="dlg-msg" id="dlgMsg"></div>
+  <input class="dlg-input" id="dlgInput">
+  <div class="dlg-actions">
+    <button class="btn ghost" id="dlgCancel">取消</button>
+    <button class="btn" id="dlgOk">确定</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<input type="date" id="datePicker" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0">
+<input type="file" id="fileInput" accept=".json,application/json" style="display:none">
+
+<script>
+"use strict";
+
+/* ============ 存储 ============ */
+const STORE_KEY = "sticky-kanban-v1";
+let storageMode = "local";
+let state = null;
+let saveWarned = false;
+
+function save() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch (e) {
+    if (!saveWarned) { saveWarned = true; toast("本地存储写入失败，请及时导出备份"); }
+  }
+  if (storageMode === "server") {
+    fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state)
+    }).catch(() => {});
+  }
+}
+
+async function loadState() {
+  try {
+    const r = await fetch("/api/state", { cache: "no-store" });
+    if (r.ok) {
+      const j = await r.json();
+      if (j && Array.isArray(j.lists) && j.lists.length) { storageMode = "server"; return j; }
+    }
+  } catch (e) { /* file:// 下必然失败，走本地 */ }
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const j = JSON.parse(raw);
+      if (j && Array.isArray(j.lists) && j.lists.length) return j;
+    }
+  } catch (e) {}
+  return null;
+}
+
+/* ============ 工具 ============ */
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1900);
+}
+
+const WEEK_CN = ["日", "一", "二", "三", "四", "五", "六"];
+
+function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+
+function parseYmd(d) {
+  const p = String(d || "").split("-");
+  if (p.length < 3) return null;
+  const dt = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  return isNaN(dt.getTime()) ? null : dt;
+}
+function todayZero() {
+  const t = new Date();
+  return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+}
+function dayDiff(d) {
+  const dt = parseYmd(d);
+  if (!dt) return 0;
+  return Math.round((dt - todayZero()) / 86400000);
+}
+/* 卡片上的截止日：只写 月/日，不抢顶栏的戏 */
+function fmtDue(d) {
+  if (!d) return "";
+  const p = String(d).split("-");
+  if (p.length < 3) return d;
+  return Number(p[1]) + "/" + Number(p[2]);
+}
+/* 本周一～本周日（备用：需要在某处显示本周范围时调用） */
+function weekRangeText() {
+  const t = todayZero();
+  const dow = (t.getDay() + 6) % 7;
+  const mon = new Date(t.getFullYear(), t.getMonth(), t.getDate() - dow);
+  const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
+  const f = x => (x.getMonth() + 1) + "." + x.getDate();
+  return f(mon) + "–" + f(sun);
+}
+function isOver(d) {
+  if (!d) return false;
+  return dayDiff(d) < 0;
+}
+
+function isDoneItem(it) {
+  const l = listById(it.listId);
+  const c = l && l.columns.find(x => x.id === it.colId);
+  return !!(c && c.kind === "done");
+}
+
+/* 顶栏左侧：今天几号 + 周几（+ 逾期条数） */
+function renderToday() {
+  const el = $("#todayLine");
+  if (!el || !state) return;
+  const t = new Date();
+  const nOver = state.items.filter(i => i.due && !isDoneItem(i) && isOver(i.due)).length;
+
+  el.innerHTML = "";
+  el.title = t.getFullYear() + "年" + (t.getMonth() + 1) + "月" + t.getDate() + "日 星期" + WEEK_CN[t.getDay()];
+
+  const d = document.createElement("span");
+  d.className = "d";
+  d.textContent = (t.getMonth() + 1) + "月" + t.getDate() + "日";
+  const w = document.createElement("span");
+  w.className = "w";
+  w.textContent = "周" + WEEK_CN[t.getDay()];
+  el.append(d, w);
+
+  if (nOver) {
+    const sep = document.createElement("span");
+    sep.className = "sep";
+    sep.textContent = "·";
+    const o = document.createElement("span");
+    o.className = "over-n";
+    o.textContent = nOver + "条逾期";
+    o.title = "有 " + nOver + " 条已过截止日";
+    el.append(sep, o);
+  }
+}
+
+/* ============ 种子数据 ============ */
+function seedState() {
+  const L = uid(), cTodo = uid(), cDone = uid();
+
+  /* 相对今天的日期，方便示例永远看起来是「新的」 */
+  const day = (off) => {
+    const t = new Date();
+    const x = new Date(t.getFullYear(), t.getMonth(), t.getDate() + off);
+    return x.getFullYear() + "-" + pad2(x.getMonth() + 1) + "-" + pad2(x.getDate());
+  };
+
+  /* 首次打开给一份示例：三种优先级 + 两条已完成，一眼看懂颜色和两栏的用法 */
+  const A = [
+    ["把下周要做的三件事定下来", "先全部列出来，再挑两件最重要的", "high", 0, false],
+    ["整理素材文件夹", "按项目归档，顺手删掉重复的截图", "mid", 1, false],
+    ["回复两条未读消息", "", "mid", 2, false],
+    ["看完存了很久的那篇长文", "收藏夹里躺了三周了", "none", null, false],
+    ["给阳台的花换土", "", "none", 5, false],
+    ["把手机里的照片备份一下", "挑出能删的先删", "none", 8, false],
+    ["记一下这周的开销", "", "none", 3, false],
+    ["挑一部周末想看的电影", "", "none", null, false],
+    ["约一次洗牙", "上次是三年前", "none", 12, false],
+    ["把桌面上的文件归档", "", "none", null, true],
+    ["确认周五的场地", "", "none", null, true]
+  ];
+
+  const items = A.map((it, i) => ({
+    id: uid(), listId: L, colId: it[4] ? cDone : cTodo, text: it[0], note: it[1],
+    due: it[3] === null ? null : day(it[3]),
+    prio: it[2], order: i,
+    completedAt: it[4] ? Date.now() : null
+  }));
+
+  return {
+    version: 2,
+    lists: [{ id: L, name: "全部", columns: [
+      { id: cTodo, name: "待办", kind: "open" },
+      { id: cDone, name: "已完成", kind: "done" }
+    ] }],
+    items,
+    activeListId: L,
+    doneExpanded: {}
+  };
+}
+
+/* ============ 查询 ============ */
+function currentList() {
+  return state.lists.find(l => l.id === state.activeListId) || state.lists[0];
+}
+function listById(id) { return state.lists.find(l => l.id === id); }
+function itemById(id) { return state.items.find(i => i.id === id); }
+
+function itemsIn(listId, colId, kind) {
+  const arr = state.items.filter(i => i.listId === listId && i.colId === colId);
+  if (kind === "done") arr.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+  else arr.sort((a, b) => (a.order || 0) - (b.order || 0));
+  return arr;
+}
+function nextOrder(listId, colId) {
+  const arr = state.items.filter(x => x.listId === listId && x.colId === colId);
+  return arr.length ? Math.max.apply(null, arr.map(x => x.order || 0)) + 1 : 0;
+}
+
+/* ============ 渲染 ============ */
+const PRIO_GROUPS = [
+  { key: "high", label: "急", ph: "拖进来就是「急」" },
+  { key: "mid", label: "本周", ph: "拖进来就是「本周」" },
+  { key: "none", label: "普通", ph: "拖到这里" }
+];
+
+function render() {
+  const list = state.lists[0];
+  if (!list) return;
+  const ae = document.activeElement;
+  const keepAdd = ae && ae.classList && ae.classList.contains("addInput");
+
+  const openCol = list.columns.find(c => c.kind !== "done");
+  const doneCol = list.columns.find(c => c.kind === "done");
+  if (!openCol || !doneCol) return;
+
+  const bodyOpen = $("#bodyOpen");
+  const bodyDone = $("#bodyDone");
+  if (!bodyOpen || !bodyDone) return;
+  const sTop = bodyOpen.scrollTop, dTop = bodyDone.scrollTop;
+
+  bodyOpen.innerHTML = "";
+  bodyDone.innerHTML = "";
+
+  const openItems = itemsIn(list.id, openCol.id, "open");
+  PRIO_GROUPS.forEach(g => bodyOpen.appendChild(buildGroup(list, openCol, g, openItems)));
+
+  const doneItems = itemsIn(list.id, doneCol.id, "done");
+  const doneBox = document.createElement("div");
+  doneBox.className = "items";
+  doneBox.dataset.listId = list.id;
+  doneBox.dataset.colId = doneCol.id;
+  doneItems.forEach(it => doneBox.appendChild(buildCard(it, doneCol)));
+  if (!doneItems.length) {
+    const ph = document.createElement("div");
+    ph.className = "grp-empty";
+    ph.textContent = "把卡片拖到这里就是完成";
+    doneBox.appendChild(ph);
+  }
+  bodyDone.appendChild(doneBox);
+
+  $("#cntOpen").textContent = openItems.length;
+  $("#cntDone").textContent = doneItems.length;
+
+  const addBox = $("#addRowBox");
+  addBox.innerHTML = "";
+  addBox.appendChild(buildAddRow(list, openCol));
+
+  bodyOpen.scrollTop = sTop;
+  bodyDone.scrollTop = dTop;
+
+  renderSummary();
+  renderToday();
+  if (keepAdd) {
+    const inp = addBox.querySelector(".addInput");
+    if (inp) inp.focus();
+  }
+}
+
+function renderSummary() {
+  const doneColIds = [];
+  state.lists.forEach(l => l.columns.forEach(c => { if (c.kind === "done") doneColIds.push(c.id); }));
+  const nOpen = state.items.filter(i => doneColIds.indexOf(i.colId) < 0).length;
+  const nDone = state.items.length - nOpen;
+
+  const box = $("#summary");
+  if (!box) return;
+  box.innerHTML = "";
+  const a = document.createElement("span"); a.className = "sum-main";
+  a.textContent = "待办 " + nOpen;
+  const b = document.createElement("span"); b.className = "sum-sub";
+  b.innerHTML = "已完成 <b>" + nDone + "</b>";
+  box.append(a, b);
+}
+
+function buildGroup(list, col, g, arrAll) {
+  const arr = arrAll.filter(i => (i.prio || "none") === g.key);
+
+  const grp = document.createElement("div");
+  grp.className = "grp grp-" + g.key;
+  grp.dataset.prio = g.key;
+
+  const tag = document.createElement("div");
+  tag.className = "grp-tag";
+  const t = document.createElement("span"); t.className = "grp-t"; t.textContent = g.label;
+  const n = document.createElement("span"); n.className = "grp-n"; n.textContent = arr.length;
+  const line = document.createElement("span"); line.className = "grp-line";
+  tag.append(t, n, line);
+  grp.appendChild(tag);
+
+  const box = document.createElement("div");
+  box.className = "items";
+  box.dataset.listId = list.id;
+  box.dataset.colId = col.id;
+  box.dataset.prio = g.key;
+
+  arr.forEach(it => box.appendChild(buildCard(it, col)));
+  if (!arr.length) {
+    const ph = document.createElement("div");
+    ph.className = "grp-empty";
+    ph.textContent = g.ph;
+    box.appendChild(ph);
+  }
+  grp.appendChild(box);
+  return grp;
+}
+
+function buildAddRow(list, col) {
+  const row = document.createElement("div");
+  row.className = "addRow";
+  const inp = document.createElement("input");
+  inp.className = "addInput";
+  inp.dataset.key = list.id + "|" + col.id;
+  inp.placeholder = "＋ 添加事项（回车）";
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const v = inp.value.trim();
+      if (v) { addItems(list, col, [v]); inp.value = ""; }
+    } else if (e.key === "Escape") { inp.value = ""; inp.blur(); }
+  });
+  inp.addEventListener("paste", (e) => {
+    const txt = (e.clipboardData || window.clipboardData).getData("text") || "";
+    const lines = txt.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    if (lines.length > 1) {
+      e.preventDefault();
+      addItems(list, col, lines);
+      toast("批量加入 " + lines.length + " 条");
+    }
+  });
+  row.appendChild(inp);
+  return row;
+}
+
+function buildCard(it, col) {
+  const isDone = col.kind === "done";
+  const card = document.createElement("div");
+  card.className = "card";
+  if (!isDone && it.prio === "high") card.classList.add("p-high");
+  else if (!isDone && it.prio === "mid") card.classList.add("p-mid");
+  card.dataset.id = it.id;
+
+  const p = document.createElement("span");
+  p.className = "prio" + (it.prio === "high" ? " high" : it.prio === "mid" ? " mid" : "");
+  if (!isDone) {
+    p.title = "点一下标重点：普通 → 急 → 本周";
+    p.addEventListener("click", (e) => { e.stopPropagation(); cyclePrio(it); });
+  }
+  card.appendChild(p);
+
+  const row1 = document.createElement("div");
+  row1.className = "card-row";
+
+  const chk = document.createElement("span");
+  chk.className = "check" + (isDone ? " on" : "");
+  chk.title = isDone ? "取消完成" : "标记完成";
+  chk.onclick = (e) => { e.stopPropagation(); toggleDone(it.id); };
+  row1.appendChild(chk);
+
+  const tx = document.createElement("div");
+  tx.className = "text";
+
+  const main = document.createElement("span");
+  main.className = "t-main" + (isDone ? " struck" : "");
+  main.textContent = it.text;
+  main.title = it.text;
+  main.addEventListener("dblclick", () => startEditText(card, main, it));
+  tx.appendChild(main);
+
+  const nt = document.createElement("span");
+  nt.className = "t-note" + (it.note ? "" : " is-empty");
+  nt.textContent = it.note || "";
+  if (it.note) nt.title = it.note;
+  nt.addEventListener("dblclick", () => startEditNote(card, nt, it));
+  tx.appendChild(nt);
+
+  row1.appendChild(tx);
+
+  if (it.due) {
+    const d = document.createElement("span");
+    const over = isOver(it.due) && !isDone;
+    d.className = "due" + (over ? " over" : "");
+    d.textContent = fmtDue(it.due);
+    d.title = over
+      ? "已逾期 " + Math.abs(dayDiff(it.due)) + " 天 · 截止 " + it.due
+      : "截止 " + it.due;
+    d.onclick = (e) => { e.stopPropagation(); pickDue(it); };
+    row1.appendChild(d);
+  }
+
+  const more = document.createElement("button");
+  more.className = "more";
+  more.textContent = "⋯";
+  more.onclick = (e) => { e.stopPropagation(); openCardMenu(it, more); };
+  row1.appendChild(more);
+
+  card.appendChild(row1);
+
+  /* 拖拽 */
+  card.addEventListener("pointerdown", (e) => onCardPointerDown(e, card));
+
+  return card;
+}
+
+/* ============ 拖拽（指针事件实现，不依赖浏览器原生拖放） ============ */
+let drag = null;
+
+function onCardPointerDown(e, card) {
+  if (e.button !== 0) return;
+  if (e.target.closest(".check")) return;
+  if (e.target.closest(".more")) return;
+  if (e.target.closest(".due")) return;
+  if (e.target.isContentEditable) return;
+  if (e.target.classList.contains("note")) return;
+  /* 挡住浏览器原生的文字选择 / 拖拽行为，否则拖到一半会被 pointercancel 掐断 */
+  e.preventDefault();
+  drag = {
+    id: card.dataset.id,
+    card: card,
+    startX: e.clientX, startY: e.clientY,
+    lastX: e.clientX, lastY: e.clientY,
+    offsetX: 0, offsetY: 0,
+    started: false, ghost: null, raf: 0,
+    targetColId: null, targetIndex: 0
+  };
+  window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
+  window.addEventListener("keydown", onDragKey);
+}
+
+function onDragKey(e) {
+  if (e.key === "Escape" && drag && drag.started) { e.preventDefault(); endDrag(); }
+}
+
+function onPointerMove(e) {
+  if (!drag) return;
+  drag.lastX = e.clientX; drag.lastY = e.clientY;
+  if (!drag.started) {
+    if (Math.abs(e.clientX - drag.startX) + Math.abs(e.clientY - drag.startY) < 3) return;
+    beginDrag(e);
+    if (!drag || !drag.started) return;
+  }
+  moveGhost(e);
+  hitTest(e.clientX, e.clientY);
+}
+
+function beginDrag(e) {
+  const card = drag.card;
+  if (!card || !card.isConnected) { endDrag(); return; }
+  const r = card.getBoundingClientRect();
+  drag.offsetX = drag.startX - r.left;
+  drag.offsetY = drag.startY - r.top;
+  const ghost = card.cloneNode(true);
+  ghost.className = "card ghost";
+  ghost.style.width = r.width + "px";
+  document.body.appendChild(ghost);
+  drag.ghost = ghost;
+  drag.baseW = r.width;
+  card.classList.add("dragging");
+  document.body.classList.add("is-dragging");
+  drag.started = true;
+  moveGhost(e);
+  startAutoScroll();
+}
+
+function moveGhost(e) {
+  if (!drag || !drag.ghost) return;
+  const x = e.clientX - drag.offsetX;
+  const y = e.clientY - drag.offsetY;
+  drag.ghost.style.transform = "translate3d(" + Math.round(x) + "px," + Math.round(y) + "px,0)";
+}
+
+/* 整列都能接住：指针落在列头、空白处、组标签上，都算这一列 */
+function colBodyAt(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el || !el.closest) return null;
+  const col = el.closest(".col");
+  if (!col) return null;
+  const body = col.querySelector(".col-body");
+  if (!body) return null;
+  const r = col.getBoundingClientRect();
+  if (x < r.left - 6 || x > r.right + 6) return null;
+  return body;
+}
+
+/* 指针纵向落在哪个分组（不在任何组内就取最近的） */
+function nearestGrp(grps, y) {
+  let best = grps[0], bestD = Infinity;
+  for (let i = 0; i < grps.length; i++) {
+    const r = grps[i].getBoundingClientRect();
+    if (y >= r.top && y <= r.bottom) return grps[i];
+    const d = y < r.top ? r.top - y : y - r.bottom;
+    if (d < bestD) { bestD = d; best = grps[i]; }
+  }
+  return best;
+}
+
+function hitTest(x, y) {
+  if (!drag) return;
+  /* 拖到窗口边缘之外时收进视口，避免整列判不出 */
+  const cx = Math.min(Math.max(x, 1), window.innerWidth - 2);
+  const cy = Math.min(Math.max(y, 1), window.innerHeight - 2);
+  const body = colBodyAt(cx, cy);
+  if (!body) {
+    /* 拖到列外时不清目标：手抖一下也不会落空 */
+    if (!drag.targetColId) clearDropMarks();
+    return;
+  }
+
+  const isDone = body.dataset.kind === "done";
+  const colEl = body.closest(".col");
+  let box = null, prio = null, grpEl = null;
+
+  if (isDone) {
+    box = body.querySelector(".items");
+  } else {
+    const grps = Array.prototype.slice.call(body.querySelectorAll(".grp"));
+    if (grps.length) {
+      grpEl = nearestGrp(grps, y);
+      prio = grpEl.dataset.prio || "none";
+      box = grpEl.querySelector(".items");
+    }
+  }
+  if (!box) return;
+
+  const cards = Array.prototype.slice.call(box.querySelectorAll(".card:not(.dragging)"));
+  let idx = cards.length;
+  for (let i = 0; i < cards.length; i++) {
+    const r = cards[i].getBoundingClientRect();
+    if (y < r.top + r.height / 2) { idx = i; break; }
+  }
+
+  markDrop(box, idx, cards, grpEl, colEl);
+  drag.targetListId = box.dataset.listId;
+  drag.targetColId = box.dataset.colId;
+  drag.targetPrio = isDone ? null : prio;
+  drag.targetIndex = idx;
+
+  /* 浮层宽度跟着目标列收窄，免得拖到窄栏时溢出窗口 */
+  if (drag.ghost) {
+    const bw = box.getBoundingClientRect().width - 2;
+    const w = Math.max(120, Math.min(drag.baseW || bw, bw));
+    drag.ghost.style.width = w + "px";
+  }
+
+  /* 浮层跟着落点变色，提前看到结果 */
+  paintGhost(isDone ? null : prio);
+}
+
+function paintGhost(prio) {
+  if (!drag || !drag.ghost) return;
+  const g = drag.ghost;
+  g.classList.toggle("p-high", prio === "high");
+  g.classList.toggle("p-mid", prio === "mid");
+  const pv = g.querySelector(".prio");
+  if (pv) {
+    pv.classList.toggle("high", prio === "high");
+    pv.classList.toggle("mid", prio === "mid");
+  }
+}
+
+function markDrop(box, idx, cards, grpEl, colEl) {
+  clearDropMarks();
+  if (colEl) colEl.classList.add("drop-over");
+  if (grpEl) grpEl.classList.add("drop-target");
+  if (!cards.length) { box.classList.add("empty-drop"); return; }
+  if (idx < cards.length) cards[idx].classList.add("drop-above");
+  else cards[cards.length - 1].classList.add("drop-below");
+}
+
+function clearDropMarks() {
+  const marked = document.querySelectorAll(".card.drop-above,.card.drop-below");
+  for (let i = 0; i < marked.length; i++) marked[i].classList.remove("drop-above", "drop-below");
+  const empties = document.querySelectorAll(".items.empty-drop");
+  for (let i = 0; i < empties.length; i++) empties[i].classList.remove("empty-drop");
+  const cols = document.querySelectorAll(".col.drop-over");
+  for (let i = 0; i < cols.length; i++) cols[i].classList.remove("drop-over");
+  const grps = document.querySelectorAll(".grp.drop-target");
+  for (let i = 0; i < grps.length; i++) grps[i].classList.remove("drop-target");
+}
+
+function bodyAt(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el || !el.closest) return null;
+  return el.closest(".col-body");
+}
+
+function startAutoScroll() {
+  const step = function () {
+    if (!drag || !drag.started) return;
+    const b = bodyAt(drag.lastX, drag.lastY);
+    if (b) {
+      const r = b.getBoundingClientRect();
+      const edge = 40;
+      let d = 0;
+      if (drag.lastY < r.top + edge) d = -Math.max(4, (r.top + edge - drag.lastY) * 0.30);
+      else if (drag.lastY > r.bottom - edge) d = Math.max(4, (drag.lastY - (r.bottom - edge)) * 0.30);
+      if (d) {
+        const before = b.scrollTop;
+        b.scrollTop += d;
+        if (b.scrollTop !== before) hitTest(drag.lastX, drag.lastY);
+      }
+    }
+    drag.raf = requestAnimationFrame(step);
+  };
+  drag.raf = requestAnimationFrame(step);
+}
+
+function onPointerUp() {
+  window.removeEventListener("pointermove", onPointerMove);
+  window.removeEventListener("pointerup", onPointerUp);
+  window.removeEventListener("pointercancel", onPointerUp);
+  window.removeEventListener("keydown", onDragKey);
+  if (!drag) return;
+  const d = drag;
+  const shouldMove = d.started && d.targetColId && d.targetListId;
+  const id = d.id, lid = d.targetListId, col = d.targetColId, idx = d.targetIndex, prio = d.targetPrio;
+  endDrag();
+  if (shouldMove) moveItem(id, lid, col, idx, prio);
+}
+
+function endDrag() {
+  if (!drag) return;
+  if (drag.raf) cancelAnimationFrame(drag.raf);
+  if (drag.ghost && drag.ghost.parentNode) drag.ghost.parentNode.removeChild(drag.ghost);
+  if (drag.card) drag.card.classList.remove("dragging");
+  document.body.classList.remove("is-dragging");
+  clearDropMarks();
+  drag = null;
+}
+
+function moveItem(id, listId, colId, index, prio) {
+  const it = itemById(id);
+  if (!it) return;
+  const list = listById(listId);
+  if (!list) return;
+  const target = list.columns.find(c => c.id === colId);
+  if (!target) return;
+
+  const fromList = listById(it.listId);
+  const fromCol = fromList && fromList.columns.find(c => c.id === it.colId);
+  const wasDone = fromCol && fromCol.kind === "done";
+  const nowDone = target.kind === "done";
+
+  if (nowDone && !wasDone) it.completedAt = Date.now();
+  if (!nowDone && wasDone) it.completedAt = null;
+  it.listId = listId;
+  it.colId = colId;
+  if (!nowDone && prio) it.prio = prio;
+
+  const sib = state.items
+    .filter(x => x.listId === listId && x.colId === colId && x.id !== id
+      && (nowDone || (x.prio || "none") === (it.prio || "none")))
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const at = clamp(index, 0, sib.length);
+  sib.splice(at, 0, it);
+  sib.forEach((x, i) => { x.order = i; });
+
+  save(); render();
+}
+
+/* ============ 操作 ============ */
+function addItems(list, col, lines) {
+  let base = nextOrder(list.id, col.id);
+  const now = Date.now();
+  lines.forEach((t, i) => {
+    state.items.push({
+      id: uid(), listId: list.id, colId: col.id, text: t, note: "",
+      due: null, prio: "none", order: base + i, completedAt: col.kind === "done" ? now : null
+    });
+  });
+  save(); render();
+}
+
+function toggleDone(id) {
+  const it = itemById(id);
+  if (!it) return;
+  const list = listById(it.listId);
+  if (!list) return;
+  const cur = list.columns.find(c => c.id === it.colId);
+  if (cur && cur.kind === "done") {
+    const first = list.columns.find(c => c.kind !== "done");
+    if (!first) return;
+    it.colId = first.id;
+    it.completedAt = null;
+    it.order = nextOrder(it.listId, first.id);
+  } else {
+    const doneCol = list.columns.find(c => c.kind === "done");
+    if (!doneCol) return;
+    it.colId = doneCol.id;
+    it.completedAt = Date.now();
+    it.order = nextOrder(it.listId, doneCol.id);
+  }
+  save(); render();
+}
+
+function startEditText(card, el, it) {
+  card.classList.add("editing");
+  el.contentEditable = "true";
+  el.focus();
+  try {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    const s = window.getSelection();
+    s.removeAllRanges(); s.addRange(r);
+  } catch (e) {}
+
+  const finish = (commit) => {
+    el.removeEventListener("keydown", onKey);
+    el.onblur = null;
+    el.contentEditable = "false";
+    card.classList.remove("editing");
+    const v = el.textContent.replace(/\s+/g, " ").trim();
+    if (commit && v && v !== it.text) { it.text = v; el.textContent = v; el.title = v; save(); }
+    else el.textContent = it.text;
+  };
+  const onKey = (e) => {
+    if (e.key === "Enter") { e.preventDefault(); el.blur(); }
+    else if (e.key === "Escape") { e.preventDefault(); el.textContent = it.text; el.blur(); }
+  };
+  el.addEventListener("keydown", onKey);
+  el.onblur = () => finish(true);
+  el.onpaste = (e) => {
+    e.preventDefault();
+    const t = ((e.clipboardData || window.clipboardData).getData("text") || "").replace(/\r?\n/g, " ");
+    document.execCommand("insertText", false, t);
+  };
+}
+
+function startEditNote(card, el, it) {
+  card.classList.add("editing");
+  el.classList.remove("is-empty");
+  el.contentEditable = "true";
+  el.focus();
+  const finish = (commit) => {
+    el.removeEventListener("keydown", onKey);
+    el.onblur = null;
+    el.contentEditable = "false";
+    card.classList.remove("editing");
+    const v = el.textContent.replace(/\n{2,}/g, "\n").trim();
+    if (commit && v !== (it.note || "")) { it.note = v; save(); render(); }
+    else {
+      el.textContent = it.note || "";
+      el.classList.toggle("is-empty", !it.note);
+      if (it.note) el.title = it.note;
+    }
+  };
+  const onKey = (e) => {
+    if (e.key === "Escape") { e.preventDefault(); el.textContent = it.note || ""; el.blur(); }
+  };
+  el.addEventListener("keydown", onKey);
+  el.onblur = () => finish(true);
+  el.onpaste = (e) => {
+    e.preventDefault();
+    const t = (e.clipboardData || window.clipboardData).getData("text") || "";
+    document.execCommand("insertText", false, t);
+  };
+}
+
+/* ============ 日期 ============ */
+let pendingDueId = null;
+const datePicker = $("#datePicker");
+function pickDue(it) {
+  pendingDueId = it.id;
+  datePicker.value = it.due || "";
+  if (typeof datePicker.showPicker === "function") {
+    try { datePicker.showPicker(); return; } catch (e) {}
+  }
+  datePicker.click();
+}
+datePicker.addEventListener("change", () => {
+  const it = pendingDueId ? itemById(pendingDueId) : null;
+  if (it) { it.due = datePicker.value || null; save(); render(); }
+});
+
+/* ============ 菜单 ============ */
+const menuEl = $("#menu");
+function closeMenu() { menuEl.classList.remove("open"); }
+function openMenu(anchor, items) {
+  menuEl.innerHTML = "";
+  items.forEach(it => {
+    if (it === "-") {
+      const d = document.createElement("div"); d.className = "menu-sep"; menuEl.appendChild(d); return;
+    }
+    if (it.label && !it.fn) {
+      const d = document.createElement("div"); d.className = "menu-label"; d.textContent = it.label;
+      menuEl.appendChild(d); return;
+    }
+    const d = document.createElement("div");
+    d.className = "menu-item" + (it.danger ? " danger" : "");
+    d.textContent = it.label;
+    if (it.mark) {
+      const k = document.createElement("span"); k.className = "k"; k.textContent = it.mark;
+      d.appendChild(k);
+    }
+    d.onclick = () => { closeMenu(); if (it.fn) it.fn(); };
+    menuEl.appendChild(d);
+  });
+  menuEl.classList.add("open");
+  menuEl.style.left = "0px"; menuEl.style.top = "0px";
+  const r = anchor.getBoundingClientRect();
+  const mw = menuEl.offsetWidth, mh = menuEl.offsetHeight;
+  let x = r.left, y = r.bottom + 4;
+  if (x + mw > window.innerWidth - 8) x = window.innerWidth - mw - 8;
+  if (y + mh > window.innerHeight - 8) y = r.top - mh - 4;
+  menuEl.style.left = Math.max(8, x) + "px";
+  menuEl.style.top = Math.max(8, y) + "px";
+}
+document.addEventListener("click", (e) => {
+  if (!menuEl.contains(e.target)) closeMenu();
+});
+
+function cyclePrio(it) {
+  it.prio = it.prio === "high" ? "mid" : it.prio === "mid" ? "none" : "high";
+  save(); render();
+  toast(it.prio === "high" ? "已标为：急" : it.prio === "mid" ? "已标为：本周" : "已取消重点");
+}
+
+function openCardMenu(it, anchor) {
+  openMenu(anchor, [
+    { label: "改文字", fn: () => {
+        const card = document.querySelector('.card[data-id="' + it.id + '"]');
+        const el = card && card.querySelector(".t-main");
+        if (el && card) startEditText(card, el, it);
+      } },
+    { label: "写备注", fn: () => {
+        const card = document.querySelector('.card[data-id="' + it.id + '"]');
+        const el = card && card.querySelector(".t-note");
+        if (el && card) startEditNote(card, el, it);
+      } },
+    { label: "设截止日", fn: () => pickDue(it) },
+    it.due ? { label: "清除截止日", fn: () => { it.due = null; save(); render(); } } : null,
+    (function () {
+      const l = listById(it.listId);
+      const c = l && l.columns.find(x => x.id === it.colId);
+      const done = !!(c && c.kind === "done");
+      return { label: done ? "移回待办" : "移到已完成", fn: () => toggleDone(it.id) };
+    })(),
+    "-",
+    { label: "优先级 · 急", mark: "红", fn: () => { it.prio = "high"; save(); render(); } },
+    { label: "优先级 · 本周", mark: "黄", fn: () => { it.prio = "mid"; save(); render(); } },
+    { label: "优先级 · 普通", fn: () => { it.prio = "none"; save(); render(); } },
+    "-",
+    { label: "删除", danger: true, fn: () => {
+        state.items = state.items.filter(x => x.id !== it.id);
+        save(); render();
+      } }
+  ].filter(Boolean));
+}
+
+function renameList(list) {
+  askText("清单名称", list.name, "", (v) => { list.name = v; save(); render(); });
+}
+
+function openListMenu(list, anchor) {
+  const doneCols = list.columns.filter(c => c.kind === "done").map(c => c.id);
+  const doneCount = state.items.filter(i => i.listId === list.id && doneCols.indexOf(i.colId) >= 0).length;
+
+  const items = [
+    { label: "重命名清单", fn: () => renameList(list) },
+    { label: "＋ 在后面加一列", fn: () => askText("新列名称", "", "例如：等素材", (v) => {
+        const doneAt = list.columns.findIndex(c => c.kind === "done");
+        const at = doneAt < 0 ? list.columns.length : doneAt;
+        list.columns.splice(at, 0, { id: uid(), name: v, kind: "open" });
+        save(); render();
+      }) }
+  ];
+
+  if (list.columns.filter(c => c.kind !== "done").length > 1) {
+    items.push("-", { label: "删除多出来的列…", fn: () => {
+      const extra = list.columns.filter(c => c.kind !== "done").slice(1);
+      if (!extra.length) { toast("只有一个待办列"); return; }
+      const c = extra[0];
+      askConfirm("删除列", '「' + c.name + '」里的 ' + itemsIn(list.id, c.id, c.kind).length + ' 条事项会移到第一列。', () => {
+        const first = list.columns.find(x => x.kind !== "done");
+        state.items.forEach(x => {
+          if (x.listId === list.id && x.colId === c.id) { x.colId = first.id; x.order = nextOrder(list.id, first.id); }
+        });
+        list.columns = list.columns.filter(x => x.id !== c.id);
+        save(); render();
+      });
+    } });
+  }
+
+  if (doneCount) {
+    items.push("-", { label: "清空本清单已完成（" + doneCount + "）", fn: () => {
+      askConfirm("清空已完成", "「" + list.name + "」里 " + doneCount + " 条已完成事项会被删除。", () => {
+        state.items = state.items.filter(i => !(i.listId === list.id && doneCols.indexOf(i.colId) >= 0));
+        save(); render();
+      });
+    } });
+  }
+
+  items.push("-", { label: "删除清单「" + list.name + "」", danger: true, fn: () => {
+    if (state.lists.length <= 1) { toast("至少保留一个清单"); return; }
+    askConfirm("删除清单", '「' + list.name + '」里的 ' + state.items.filter(i => i.listId === list.id).length + ' 条事项会一起删除，无法恢复。', () => {
+      state.items = state.items.filter(i => i.listId !== list.id);
+      state.lists = state.lists.filter(x => x.id !== list.id);
+      save(); render();
+    });
+  } });
+
+  openMenu(anchor, items);
+}
+
+function openMainMenu(anchor) {
+  openMenu(anchor, [
+    { label: "＋ 添加事项", fn: quickAdd },
+    "-",
+    { label: "导出备份", fn: exportJSON },
+    { label: "导入备份", fn: () => $("#fileInput").click() },
+    "-",
+    { label: "清空全部已完成", danger: true, fn: () => {
+        const doneIds = [];
+        state.lists.forEach(l => l.columns.forEach(c => { if (c.kind === "done") doneIds.push(c.id); }));
+        const n = state.items.filter(i => doneIds.indexOf(i.colId) >= 0).length;
+        if (!n) { toast("没有已完成的事项"); return; }
+        askConfirm("清空已完成", "共 " + n + " 条已完成事项会被删除，无法恢复。", () => {
+          state.items = state.items.filter(i => doneIds.indexOf(i.colId) < 0);
+          save(); render();
+        });
+      } },
+    "-",
+    { label: "关于 柒柒清单", fn: showAbout }
+  ]);
+}
+
+/* 关于：版本号 + 数据目录，出问题时好排查 */
+function showAbout() {
+  const done = (info) => {
+    const lines = ["柒柒清单 " + ((info && info.version) || "1.0.0")];
+    if (info && info.dataDir) lines.push("数据目录：" + info.dataDir);
+    lines.push("开源项目 · MIT License");
+    askInfo("关于", lines.join("\n"));
+  };
+  if (window.desktop && window.desktop.info) {
+    window.desktop.info().then(done).catch(() => done(null));
+  } else {
+    done(null);
+  }
+}
+
+/* ============ 弹窗 ============ */
+const mask = $("#mask"), dialog = $("#dialog"), dlgInput = $("#dlgInput"),
+      dlgTitle = $("#dlgTitle"), dlgMsg = $("#dlgMsg"), dlgOk = $("#dlgOk"), dlgCancel = $("#dlgCancel");
+let dlgOnOk = null;
+
+function closeDialog() {
+  mask.classList.remove("open");
+  dialog.classList.remove("open");
+  dlgCancel.style.display = "";
+  dlgOnOk = null;
+}
+function askText(title, value, placeholder, onOk) {
+  dlgTitle.textContent = title;
+  dlgMsg.style.display = "none";
+  dlgInput.style.display = "block";
+  dlgCancel.style.display = "";
+  dlgInput.value = value || "";
+  dlgInput.placeholder = placeholder || "";
+  dlgOk.className = "btn";
+  dlgOk.textContent = "确定";
+  dlgOnOk = onOk;
+  mask.classList.add("open");
+  dialog.classList.add("open");
+  setTimeout(() => { dlgInput.focus(); dlgInput.select(); }, 30);
+}
+function askConfirm(title, msg, onOk) {
+  dlgTitle.textContent = title;
+  dlgMsg.textContent = msg;
+  dlgMsg.style.display = "block";
+  dlgInput.style.display = "none";
+  dlgCancel.style.display = "";
+  dlgOk.className = "btn danger";
+  dlgOk.textContent = "删除";
+  dlgOnOk = onOk;
+  mask.classList.add("open");
+  dialog.classList.add("open");
+}
+/* 只有「知道了」的提示框 */
+function askInfo(title, msg) {
+  dlgTitle.textContent = title;
+  dlgMsg.textContent = msg;
+  dlgMsg.style.display = "block";
+  dlgInput.style.display = "none";
+  dlgOk.className = "btn";
+  dlgOk.textContent = "知道了";
+  dlgOnOk = null;
+  dlgCancel.style.display = "none";
+  mask.classList.add("open");
+  dialog.classList.add("open");
+}
+dlgCancel.onclick = closeDialog;
+mask.onclick = closeDialog;
+dlgOk.onclick = () => {
+  const fn = dlgOnOk;
+  const v = dlgInput.style.display === "none" ? null : dlgInput.value.trim();
+  if (dlgInput.style.display !== "none" && !v) { dlgInput.focus(); return; }
+  closeDialog();
+  if (fn) fn(v);
+};
+dlgInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); dlgOk.click(); }
+  else if (e.key === "Escape") { e.preventDefault(); closeDialog(); }
+});
+
+/* ============ 导入导出 ============ */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  const d = new Date();
+  a.href = URL.createObjectURL(blob);
+  a.download = "便签备份-" + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast("已导出备份");
+}
+
+$("#fileInput").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const j = JSON.parse(reader.result);
+      if (!j || !Array.isArray(j.lists) || !Array.isArray(j.items)) throw new Error("格式不对");
+      askConfirm("导入备份", "会用备份内容替换当前全部数据。", () => {
+        state = normalizeState(j);
+        save(); render();
+        toast("已导入");
+      });
+    } catch (err) {
+      toast("文件读不出来，可能不是备份文件");
+    }
+  };
+  reader.readAsText(f);
+  e.target.value = "";
+});
+
+/* ============ 顶部交互 ============ */
+$("#menuBtn").onclick = (e) => { e.stopPropagation(); openMainMenu(e.currentTarget); };
+$("#quickAdd").onclick = quickAdd;
+
+function quickAdd() {
+  const inp = document.querySelector("#addRowBox .addInput");
+  if (inp) inp.focus();
+}
+
+/* ============ 结构整理：合成单块看板 ============ */
+function mergeAllLists(st) {
+  const keep = st.lists[0];
+  const rank = new Map();
+  st.lists.forEach((l, i) => rank.set(l.id, i));
+
+  const openCol = keep.columns.find(c => c.kind !== "done");
+  const doneCol = keep.columns.find(c => c.kind === "done");
+  if (!openCol || !doneCol) return;
+
+  const bufOpen = [], bufDone = [];
+  st.items.forEach(it => {
+    const src = st.lists.find(l => l.id === it.listId);
+    const srcCol = src && src.columns.find(c => c.id === it.colId);
+    const isDone = srcCol ? srcCol.kind === "done" : !!it.completedAt;
+    (isDone ? bufDone : bufOpen).push({ it, li: rank.get(it.listId) || 0, ord: it.order || 0 });
+  });
+
+  bufOpen.sort((a, b) => (a.li - b.li) || (a.ord - b.ord));
+  bufOpen.forEach((x, n) => {
+    x.it.listId = keep.id; x.it.colId = openCol.id; x.it.order = n; x.it.completedAt = null;
+  });
+
+  bufDone.sort((a, b) => (b.it.completedAt || 0) - (a.it.completedAt || 0));
+  bufDone.forEach((x, n) => {
+    x.it.listId = keep.id; x.it.colId = doneCol.id; x.it.order = n;
+    if (!x.it.completedAt) x.it.completedAt = Date.now();
+  });
+
+  keep.columns = [
+    { id: openCol.id, name: openCol.name || "待办", kind: "open" },
+    { id: doneCol.id, name: doneCol.name || "已完成", kind: "done" }
+  ];
+  keep.name = "全部";
+  st.lists = [keep];
+  st.activeListId = keep.id;
+}
+
+/* ============ 结构整理：只保留 待办 / 已完成 ============ */
+function normalizeState(st) {
+  if (!st || !Array.isArray(st.lists)) return st;
+  st.lists = st.lists.filter(Boolean);
+  st.items = (st.items || []).filter(i => i && i.id && i.listId);
+  if (!st.doneExpanded) st.doneExpanded = {};
+
+  st.lists.forEach(list => {
+    if (!Array.isArray(list.columns) || !list.columns.length) list.columns = [];
+    const openCols = list.columns.filter(c => c.kind !== "done");
+    const target = openCols[0];
+
+    /* 去掉"进行中"这类中间列，事项并入第一列 */
+    if (openCols.length > 1 && target) {
+      list.columns = list.columns.filter(c => {
+        if (c.kind === "done" || c.id === target.id) return true;
+        if ((c.name || "").indexOf("进行中") >= 0) {
+          st.items.forEach(i => {
+            if (i.listId === list.id && i.colId === c.id) {
+              i.colId = target.id;
+              i.order = 9999;
+            }
+          });
+          return false;
+        }
+        return true;
+      });
+    }
+
+    if (!list.columns.some(c => c.kind !== "done")) {
+      list.columns.unshift({ id: uid(), name: "待办", kind: "open" });
+    }
+    if (!list.columns.some(c => c.kind === "done")) {
+      list.columns.push({ id: uid(), name: "已完成", kind: "done" });
+    }
+    list.columns.forEach(c => { if (c.kind === "done" && c.name === "完成") c.name = "已完成"; });
+    list.columns.sort((a, b) => (a.kind === "done" ? 1 : 0) - (b.kind === "done" ? 1 : 0));
+
+    const ids = list.columns.map(c => c.id);
+    const firstOpen = list.columns.find(c => c.kind !== "done");
+    st.items.forEach(i => {
+      if (i.listId === list.id && ids.indexOf(i.colId) < 0 && firstOpen) i.colId = firstOpen.id;
+    });
+
+    /* 每列 order 重新编号 */
+    list.columns.forEach(c => {
+      const arr = st.items.filter(i => i.listId === list.id && i.colId === c.id);
+      arr.sort((a, b) => (a.order || 0) - (b.order || 0));
+      arr.forEach((x, n) => { x.order = n; });
+    });
+  });
+
+  const listIds = st.lists.map(l => l.id);
+  st.items = st.items.filter(i => listIds.indexOf(i.listId) >= 0);
+  if (!st.lists.length) return seedState();
+  if (st.lists.length > 1) mergeAllLists(st);
+  if (!st.activeListId || !st.lists.some(l => l.id === st.activeListId)) st.activeListId = st.lists[0].id;
+  return st;
+}
+
+/* ============ 桌面版：窗口按钮 ============ */
+function mountDesktopChrome() {
+  if (!window.desktop) return;
+  document.body.classList.add("is-desktop");
+  const bar = document.querySelector(".topbar");
+  if (!bar) return;
+
+  const mk = (txt, title, cls, fn) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "winbtn" + (cls ? " " + cls : "");
+    b.textContent = txt;
+    b.title = title;
+    b.onclick = fn;
+    return b;
+  };
+
+  const box = document.createElement("div");
+  box.className = "winbtns";
+
+  let on = true;
+  const syncPin = (v) => {
+    on = !!v;
+    pin.classList.toggle("off", !on);
+    pin.title = on ? "窗口已置顶（点击取消）" : "窗口未置顶（点击置顶）";
+  };
+
+  const pin = mk("顶", "窗口已置顶", "win-pin", () => {
+    window.desktop.togglePin().then(syncPin);
+  });
+  const min = mk("–", "最小化", "", () => window.desktop.minimize());
+  const closeBtn = mk("✕", "关闭便签", "win-close", () => window.desktop.close());
+
+  box.append(pin, min, closeBtn);
+  bar.appendChild(box);
+
+  try {
+    const p = window.desktop.getPin();
+    if (p && typeof p.then === "function") p.then(syncPin).catch(() => {});
+  } catch (e) {}
+  if (window.desktop.onPin) window.desktop.onPin(syncPin);
+}
+
+/* ============ 启动 ============ */
+(async function boot() {
+  const loaded = await loadState();
+  state = normalizeState(loaded || seedState());
+  save();
+  render();
+  mountDesktopChrome();
+
+  /* 页面常开时跨天，日期与「今天/明天」要自己翻页 */
+  let dayKey = new Date().toDateString();
+  setInterval(() => {
+    const k = new Date().toDateString();
+    if (k === dayKey) return;
+    dayKey = k;
+    render();
+  }, 30000);
+})();
+</script>
+</body>
+</html>

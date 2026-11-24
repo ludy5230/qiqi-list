@@ -1,0 +1,46 @@
+{
+  "name": "qiqi-list",
+  "version": "1.0.0",
+  "description": "柒柒清单 · 贴在桌面上的置顶便签清单，左待办右已完成，拖一下即换状态",
+  "main": "main.js",
+  "author": "柒柒",
+  "license": "MIT",
+  "homepage": "https://github.com/",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.qiqi.list",
+    "productName": "柒柒清单",
+    "copyright": "Copyright © 2026 柒柒",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "柒柒清单-${version}-便携版.exe",
+      "unpackDirName": "QiqiList",
+      "requestExecutionLevel": "user"
+    },
+    "compression": "normal"
+  }
+}
