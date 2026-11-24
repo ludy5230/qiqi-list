@@ -524,15 +524,6 @@ function fmtDue(d) {
   if (p.length < 3) return d;
   return Number(p[1]) + "/" + Number(p[2]);
 }
-/* 本周一～本周日（备用：需要在某处显示本周范围时调用） */
-function weekRangeText() {
-  const t = todayZero();
-  const dow = (t.getDay() + 6) % 7;
-  const mon = new Date(t.getFullYear(), t.getMonth(), t.getDate() - dow);
-  const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
-  const f = x => (x.getMonth() + 1) + "." + x.getDate();
-  return f(mon) + "–" + f(sun);
-}
 function isOver(d) {
   if (!d) return false;
   return dayDiff(d) < 0;
@@ -639,9 +630,9 @@ function nextOrder(listId, colId) {
 
 /* ============ 渲染 ============ */
 const PRIO_GROUPS = [
-  { key: "high", label: "急", ph: "拖进来就是「急」" },
-  { key: "mid", label: "本周", ph: "拖进来就是「本周」" },
-  { key: "none", label: "普通", ph: "拖到这里" }
+  { key: "high", label: "要紧", ph: "拖进来就是「要紧」" },
+  { key: "mid", label: "寻常", ph: "拖进来就是「寻常」" },
+  { key: "none", label: "不急", ph: "拖进来就是「不急」" }
 ];
 
 function render() {
@@ -782,7 +773,7 @@ function buildCard(it, col) {
   const p = document.createElement("span");
   p.className = "prio" + (it.prio === "high" ? " high" : it.prio === "mid" ? " mid" : "");
   if (!isDone) {
-    p.title = "点一下标重点：普通 → 急 → 本周";
+    p.title = "点一下调紧迫程度：不急 → 要紧 → 寻常";
     p.addEventListener("click", (e) => { e.stopPropagation(); cyclePrio(it); });
   }
   card.appendChild(p);
@@ -1253,7 +1244,7 @@ document.addEventListener("click", (e) => {
 function cyclePrio(it) {
   it.prio = it.prio === "high" ? "mid" : it.prio === "mid" ? "none" : "high";
   save(); render();
-  toast(it.prio === "high" ? "已标为：急" : it.prio === "mid" ? "已标为：本周" : "已取消重点");
+  toast(it.prio === "high" ? "已标为：要紧" : it.prio === "mid" ? "已标为：寻常" : "已标为：不急");
 }
 
 function openCardMenu(it, anchor) {
@@ -1277,9 +1268,9 @@ function openCardMenu(it, anchor) {
       return { label: done ? "移回待办" : "移到已完成", fn: () => toggleDone(it.id) };
     })(),
     "-",
-    { label: "优先级 · 急", mark: "红", fn: () => { it.prio = "high"; save(); render(); } },
-    { label: "优先级 · 本周", mark: "黄", fn: () => { it.prio = "mid"; save(); render(); } },
-    { label: "优先级 · 普通", fn: () => { it.prio = "none"; save(); render(); } },
+    { label: "优先级 · 要紧", mark: "红", fn: () => { it.prio = "high"; save(); render(); } },
+    { label: "优先级 · 寻常", mark: "黄", fn: () => { it.prio = "mid"; save(); render(); } },
+    { label: "优先级 · 不急", fn: () => { it.prio = "none"; save(); render(); } },
     "-",
     { label: "删除", danger: true, fn: () => {
         state.items = state.items.filter(x => x.id !== it.id);

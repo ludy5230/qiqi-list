@@ -6,10 +6,10 @@
      node kanban.js path
      node kanban.js list
      node kanban.js today
-     node kanban.js add "文字" [--note "备注"] [--due 2026-11-30] [--prio high|mid|none]
+     node kanban.js add "文字" [--note "备注"] [--due 2026-11-30] [--prio 要紧|寻常|不急]
      node kanban.js done "关键词"
      node kanban.js undone "关键词"
-     node kanban.js prio "关键词" high|mid|none
+     node kanban.js prio "关键词" 要紧|寻常|不急       （等价于 high|mid|none）
      node kanban.js due "关键词" 2026-12-01|none
      node kanban.js note "关键词" "备注文字"
      node kanban.js rm "关键词"
@@ -25,8 +25,14 @@ const os = require("os");
 
 const HOME = os.homedir();
 const CFG = path.join(HOME, ".workbuddy", "qiqi-list.json");
-const PRIO_CN = { high: "急", mid: "本周", none: "普通" };
+const PRIO_CN = { high: "要紧", mid: "寻常", none: "不急" };
 const PRIO_ORDER = ["high", "mid", "none"];
+/* 接受中文说法，省得每次都要记 high/mid/none */
+const PRIO_ALIAS = {
+  high: "high", 要紧: "high", 急: "high", 很急: "high", 紧急: "high",
+  mid: "mid", 寻常: "mid", 一般: "mid", 一般紧: "mid",
+  none: "none", 不急: "none", 不着急: "none", 普通: "none"
+};
 const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
 
 /* ---------- 定位数据文件 ---------- */
@@ -113,7 +119,7 @@ function fmtDue(d) {
   return md + " " + w;
 }
 
-/* 排序：急 → 本周 → 普通，组内按 order */
+/* 排序：要紧 → 寻常 → 不急，组内按 order */
 function sortedOpen(db) {
   const open = db.items.filter(i => !isDone(db, i));
   open.sort((a, b) => {
@@ -184,7 +190,7 @@ function printToday(db) {
   sec("已逾期", over);
   sec("今天到期", tod);
   sec("未来 7 天", soon);
-  sec("其它「急」", high);
+  sec("其它「要紧」", high);
   if (!over.length && !tod.length && !soon.length && !high.length) {
     console.log("\n今天没有到期或紧急的事，待办共 " + open.length + " 条。");
   }
@@ -237,14 +243,14 @@ const { pos, opt } = parseFlags(argv.slice(1));
 if (!cmd || cmd === "help" || cmd === "--help") {
   console.log("柒柒清单 · 数据命令\n");
   console.log("  path                       输出数据文件路径");
-  console.log("  list                       列出待办（按急/本周/普通）与已完成");
+  console.log("  list                       列出待办（按要紧/寻常/不急）与已完成");
   console.log("  today                      今天到期、逾期、未来 7 天");
   console.log("  add \"文字\" [--note 备注]    新增一条");
-  console.log("        [--due 2026-11-30] [--prio high|mid|none]");
+  console.log("        [--due 2026-11-30] [--prio 要紧|寻常|不急]");
   console.log("  add-bulk                   从标准输入按行批量新增");
   console.log("  done \"关键词\"               标为已完成");
   console.log("  undone \"关键词\"             移回待办");
-  console.log("  prio \"关键词\" high|mid|none 改优先级");
+  console.log("  prio \"关键词\" 要紧|寻常|不急  改优先级（也认 high/mid/none）");
   console.log("  due \"关键词\" 2026-12-01|none 改截止日");
   console.log("  note \"关键词\" \"备注\"        改备注");
   console.log("  rm \"关键词\"                 删除（不可恢复）");
@@ -283,7 +289,7 @@ if (cmd === "add") {
     id: newId(), listId: list.id, colId: col.id,
     text, note: (opt.note && opt.note !== "true" ? opt.note : ""),
     due: (opt.due && opt.due !== "true" ? opt.due : null),
-    prio: (opt.prio && ["high", "mid", "none"].includes(opt.prio) ? opt.prio : "none"),
+    prio: (opt.prio && (PRIO_ALIAS[opt.prio] || PRIO_ALIAS[String(opt.prio).toLowerCase()])) || "none",
     order: maxOrder + 1, completedAt: null
   };
   db.items.push(it);
@@ -333,8 +339,9 @@ if (cmd === "done" || cmd === "undone") {
 }
 
 if (cmd === "prio") {
-  const want = (pos[1] || "").trim();
-  if (!["high", "mid", "none"].includes(want)) die("优先级只能是 high / mid / none");
+  const raw = (pos[1] || "").trim();
+  const want = PRIO_ALIAS[raw] || PRIO_ALIAS[raw.toLowerCase()];
+  if (!want) die("优先级只能是要紧 / 寻常 / 不急（也认 high / mid / none）");
   const { db, file } = readDB();
   const it = pick(db, pos[0]);
   it.prio = want;

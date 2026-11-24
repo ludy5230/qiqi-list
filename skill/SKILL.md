@@ -35,7 +35,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubus
 
 ### 用户问「这是什么东西」时
 
-一句话讲清：贴在桌面最上层的便签清单，左边待办右边已完成，把卡片往右一拖就算做完；带急/本周/普通三档颜色和截止日；不联网、不注册，数据就在他自己电脑上。
+一句话讲清：贴在桌面最上层的便签清单，左边待办右边已完成，把卡片往右一拖就算做完；按「要紧 / 寻常 / 不急」三档染色，带截止日；不联网、不注册，数据就在他自己电脑上。
 
 ## 先确认能不能动数据
 
@@ -69,8 +69,8 @@ node scripts/install.js --dir "D:\Apps\QiqiList"   # 指定安装位置
 ## 看清单
 
 ```bash
-node scripts/kanban.js list     # 待办按「急/本周/普通」分组，附已完成
-node scripts/kanban.js today    # 今天到期、已逾期、未来 7 天、其它「急」的事
+node scripts/kanban.js list     # 待办按「要紧/寻常/不急」分组，附已完成
+node scripts/kanban.js today    # 今天到期、已逾期、未来 7 天、其它「要紧」的事
 ```
 
 `list` 的输出每条都带 `#id`。跟用户复述时不要念 id，除非需要精确指认某一条。
@@ -80,11 +80,11 @@ node scripts/kanban.js today    # 今天到期、已逾期、未来 7 天、其�
 ## 改清单
 
 ```bash
-node scripts/kanban.js add "买电池" --prio high --due 2026-11-28 --note "超市那种"
+node scripts/kanban.js add "买电池" --prio 要紧 --due 2026-11-28 --note "超市那种"
 node scripts/kanban.js add-bulk              # 从标准输入按行批量加
 node scripts/kanban.js done "买电池"
 node scripts/kanban.js undone "买电池"
-node scripts/kanban.js prio "买电池" mid      # high / mid / none
+node scripts/kanban.js prio "买电池" 寻常      # 要紧 / 寻常 / 不急（也认 high / mid / none）
 node scripts/kanban.js due "买电池" 2026-12-01
 node scripts/kanban.js due "买电池" none      # 清掉截止日
 node scripts/kanban.js note "买电池" "要南孚的"
@@ -101,6 +101,16 @@ printf '%s\n' "线锯拉锯成本对比" "五里桥" "深井老路开场" | node
 ```
 
 批量添加前先把解析出来的条目念一遍让用户确认，尤其是从长文里抽出来的。
+
+**三档优先级怎么理解**（数据里仍叫 `high` / `mid` / `none`，界面上叫这几个名字）：
+
+| 名称 | 数据值 | 含义 |
+| --- | --- | --- |
+| 要紧 | `high` | 现在就得动，拖着会出事 |
+| 寻常 | `mid` | 按顺序排着做，不算急但别忘 |
+| 不急 | `none` | 搁着也不会出事 |
+
+这三档只表示**有多着急**，不表示时间——时间归截止日管。用户要是还说「急」「本周」「普通」，按 急=要紧、本周=寻常、普通=不急 理解即可，但回复时用新名字。
 
 ## 动手时的分寸
 
