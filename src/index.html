@@ -1309,12 +1309,16 @@ function openMainMenu(anchor) {
   ]);
 }
 
-/* 关于：版本号 + 数据目录，出问题时好排查 */
+/* 关于：版本号 + 数据目录 + 协议要点 */
 function showAbout() {
   const done = (info) => {
-    const lines = ["柒柒清单 " + ((info && info.version) || "1.0.0")];
+    const lines = ["柒柒清单 " + ((info && info.version) || "1.1.1")];
     if (info && info.dataDir) lines.push("数据目录：" + info.dataDir);
-    lines.push("开源项目 · MIT License");
+    lines.push("");
+    lines.push("个人使用免费，禁止商业用途。");
+    lines.push("不得出售，不得改名套壳后收费，");
+    lines.push("不得打包进付费产品对外提供。");
+    lines.push("github.com/ludy5230/qiqi-list");
     askInfo("关于", lines.join("\n"));
   };
   if (window.desktop && window.desktop.info) {

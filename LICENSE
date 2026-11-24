@@ -1,21 +1,123 @@
-MIT License
+柒柒清单个人使用许可协议 v1.0
+Qiqi List Personal Use License v1.0
 
-Copyright (c) 2026 柒柒
+版权所有 (c) 2026 柒柒 · https://github.com/ludy5230/qiqi-list
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+一句话：个人免费使用；不得用于任何商业目的，不得改头换面后收费或转售。
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+一、定义
+
+1.1 "本软件"指本项目的源代码、可执行文件、界面设计、图标、文档及其任何衍生作品。
+
+1.2 "个人使用"指自然人为自己或家庭成员的私人目的使用本软件，包括处理本人的工作事务、学习、研究、技术实践，不以获取经济收益为目的。
+
+1.3 "商业用途"指任何直接或间接获取经济利益的使用行为，包括但不限于本协议第三条列举的情形。
+
+
+二、授予的权利（免费）
+
+在遵守本协议全部条款的前提下，任何人可以免费、非独占、不可转让地：
+
+2.1 下载、安装、运行本软件，用于个人使用；
+
+2.2 复制本软件用于备份，或在本人拥有的多台设备上安装使用；
+
+2.3 阅读、修改源代码，用于本人的使用、学习与研究；
+
+2.4 将本软件原样免费分享给他人，前提是完整附带本协议与版权声明，且不收取任何费用、不设置任何获取门槛；
+
+2.5 在文章、视频、技术分享、课堂教学中介绍、评测、演示本软件，前提是不以本软件本身作为收费标的。
+
+
+三、禁止的行为（商业用途）
+
+未取得著作权人事先的书面授权，任何人不得：
+
+3.1 出售、出租、许可、转让本软件，或对本软件的下载、安装、激活、使用收取任何费用；
+
+3.2 修改名称、图标、界面、文案后，将本软件作为自己的产品发布、分发或销售（即"套壳"）；
+
+3.3 将本软件（无论原样或经修改）整体或部分地打包进付费产品、付费课程、付费社群、会员权益、订阅服务中对外提供；
+
+3.4 将本软件预装、捆绑在对外销售的硬件设备、整机、U 盘、存储介质或系统镜像中；
+
+3.5 将本软件作为付费服务（包括 SaaS、代部署、代运维、付费下载站、网盘付费分享、付费技术支持包）的组成部分提供给他人；
+
+3.6 通过广告、导流、打赏、付费解锁、引流变现等方式，以本软件本身直接获利；
+
+3.7 移除、遮蔽、篡改本软件中的版权声明、本协议文本、作者标识或项目地址；
+
+3.8 使用"柒柒清单"名称、图标或近似标识，使他人误认某一衍生版本由原作者发布、授权或背书。
+
+
+四、再分发条件
+
+4.1 任何在本协议允许范围内的再分发，必须完整保留本协议全文与版权声明，不得删减；
+
+4.2 修改后的版本必须以显著方式标明"已修改"，且不得继续使用原名称与图标，以免混淆来源；
+
+4.3 不得对本协议施加额外限制，也不得将本软件整体或部分地置于其他许可协议的约束之下。
+
+
+五、终止
+
+5.1 违反本协议任何条款，本协议授予的全部权利立即自动终止，无需另行通知；
+
+5.2 权利终止后，应立即停止使用本软件，并删除所持有、所分发的全部副本；
+
+5.3 违约行为在终止前已经造成的损害，不因停止使用而免除责任。
+
+
+六、商业授权
+
+如需将本软件用于任何商业用途，须事先取得著作权人的书面授权。可通过项目地址 https://github.com/ludy5230/qiqi-list 联系作者。
+
+
+七、免责声明
+
+本软件按"现状"提供，不附带任何明示或默示的担保，包括但不限于对适销性、特定用途适用性和不侵权的担保。在任何情况下，作者或版权持有人均不对因本软件或本软件的使用或其他交易而产生的任何索赔、损害或其他责任承担责任，无论其源于合同诉讼、侵权行为还是其他事由。
+
+
+八、其他
+
+8.1 本协议以中文版本为准，任何译文仅供参考。
+
+8.2 本协议任何条款如与适用法律的强制性规定冲突，该条款在冲突范围内无效，其余条款继续有效并应予执行。
+
+
+================================================================
+ENGLISH SUMMARY
+This is a convenience translation for reference only. The Chinese
+text above is the binding version.
+
+Qiqi List is free for personal, non-commercial use. You may download,
+install and run it for yourself and your family, copy it for backup,
+modify the source for your own use, and share it free of charge —
+provided this license and the copyright notice remain intact and no
+fee or access barrier is imposed.
+
+Commercial use is NOT permitted without prior written permission from
+the author. This includes, without limitation: selling the software or
+charging for its download, installation, activation or use; rebranding
+or repackaging it (with a different name, icon, UI or wording) and
+distributing or selling it as your own; bundling it into paid products,
+courses, memberships or subscriptions; pre-installing it on hardware
+sold to others; offering it as part of a paid service (SaaS, deployment
+or maintenance services, paid download sites, paywalled sharing);
+monetizing it directly through ads, tips or paywalls; removing or
+altering the copyright notice, this license or the author's marks; or
+using the "柒柒清单" name or icon in a way that implies the original
+author's release, authorization or endorsement.
+
+Any violation terminates all rights granted here immediately. Upon
+termination you must stop using the software and delete all copies.
+For commercial licensing, contact the author via the project page.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
