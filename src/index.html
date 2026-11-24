@@ -98,7 +98,29 @@ body.is-desktop .app{
 .cols{flex:1;display:flex;min-height:0;overflow:hidden}
 .col{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
 .col-open{flex:1 1 auto}
-.col-done{flex:0 0 262px;background:#FDFAF1;border-left:1px solid var(--line)}
+.col-done{flex:0 0 var(--done-w,262px);background:#FDFAF1}
+/* 中间分隔条：按住左右拖，两栏宽度随心分 */
+.gutter{
+  flex:0 0 9px;position:relative;cursor:col-resize;
+  touch-action:none;background:transparent;z-index:5;
+}
+.gutter::before{
+  content:"";position:absolute;left:4px;top:0;bottom:0;width:1px;
+  background:#E3D6B8;
+  transition:left .12s,width .12s,background .12s;
+}
+.gutter:hover::before{left:3px;width:3px;background:#D9C89F}
+.gutter.dragging::before{left:3px;width:3px;background:#C9A227}
+/* 悬停时冒出一列小抓点，暗示「这里能拖」 */
+.gutter::after{
+  content:"";position:absolute;left:3px;top:calc(50% - 14px);
+  width:3px;height:3px;border-radius:50%;background:#C6B592;
+  box-shadow:0 6px 0 #C6B592,0 12px 0 #C6B592;
+  opacity:0;transition:opacity .15s;
+}
+.gutter:hover::after,.gutter.dragging::after{opacity:1}
+/* 拖动时整窗换光标，避免经过卡片时闪成抓手 */
+body.resizing,body.resizing *{cursor:col-resize!important;user-select:none!important}
 .col-head{
   display:flex;align-items:center;gap:6px;padding:9px 12px 7px;
   flex:0 0 auto;user-select:none;
@@ -337,6 +359,7 @@ body.is-dragging .card{cursor:grabbing}
         <div class="col-body" id="bodyOpen" data-kind="open"></div>
         <div class="addRow" id="addRowBox"></div>
       </section>
+      <div class="gutter" id="gutter" title="左右拖动调整两栏宽度 · 双击恢复默认"></div>
       <section class="col col-done">
         <div class="col-head">
           <span class="col-title">已完成</span>
@@ -1402,6 +1425,80 @@ $("#fileInput").addEventListener("change", (e) => {
 /* ============ 顶部交互 ============ */
 $("#menuBtn").onclick = (e) => { e.stopPropagation(); openMainMenu(e.currentTarget); };
 $("#quickAdd").onclick = quickAdd;
+
+/* ============ 两栏宽度：中间分隔条可拖 ============ */
+const SPLIT_KEY = "qiqi-split-v1";
+const MIN_DONE = 152;   /* 已完成栏最窄也要放得下一行字 */
+const MIN_OPEN = 210;   /* 待办栏同理 */
+
+function clampDone(w) {
+  const cols = $(".cols");
+  if (!cols) return w;
+  const boxW = cols.getBoundingClientRect().width;
+  /* 布局还没算出来（宽 0）时不要误判成超窄窗口 */
+  if (!boxW || boxW < 200) return Math.max(MIN_DONE, Math.round(w));
+  const max = Math.max(MIN_DONE, boxW - MIN_OPEN - 9);
+  return Math.round(Math.max(MIN_DONE, Math.min(max, w)));
+}
+function setDoneW(w) {
+  document.documentElement.style.setProperty("--done-w", clampDone(w) + "px");
+}
+function curDoneW() {
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--done-w"));
+  return isNaN(v) ? 0 : v;
+}
+
+(function initSplit() {
+  const g = $("#gutter");
+  if (!g) return;
+
+  /* 恢复上次拖出来的宽度（等首屏布局算完再套，免得被当成超窄窗口压到下限） */
+  const saved = Number(localStorage.getItem(SPLIT_KEY));
+  if (saved > 0) requestAnimationFrame(() => setDoneW(saved));
+
+  let dragging = false;
+
+  g.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    dragging = true;
+    g.classList.add("dragging");
+    document.body.classList.add("resizing");
+    try { g.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+
+  g.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const r = $(".cols").getBoundingClientRect();
+    /* 减掉分隔条的一半：光标压在条中心时，宽度不跳变 */
+    const gw = g.getBoundingClientRect().width;
+    setDoneW(r.right - (e.clientX + gw / 2));
+  });
+
+  const stop = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    g.classList.remove("dragging");
+    document.body.classList.remove("resizing");
+    try { g.releasePointerCapture(e.pointerId); } catch (err) {}
+    const px = curDoneW();
+    if (px) localStorage.setItem(SPLIT_KEY, String(Math.round(px)));
+  };
+  g.addEventListener("pointerup", stop);
+  g.addEventListener("pointercancel", stop);
+
+  /* 双击回到默认的 262px */
+  g.addEventListener("dblclick", () => {
+    localStorage.removeItem(SPLIT_KEY);
+    document.documentElement.style.removeProperty("--done-w");
+  });
+
+  /* 窗口变窄时把宽度收回合法范围，避免待办栏被挤没 */
+  window.addEventListener("resize", () => {
+    const px = curDoneW();
+    if (px) setDoneW(px);
+  });
+})();
 
 function quickAdd() {
   const inp = document.querySelector("#addRowBox .addInput");
