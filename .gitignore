@@ -5,3 +5,5 @@ window.json
 *.log
 .DS_Store
 Thumbs.db
+_rel_body.json
+_*.log
